@@ -2,6 +2,8 @@
 
 # YC Atlas
 
+[Explore the live universe](https://yc-atlas1.vercel.app/)
+
 Fly through the Y Combinator company universe. Explore **6,268 companies across 51 batches**, discover their logos and descriptions, and open their websites.
 
 A lightweight app built with React, TypeScript, Vite, and a native Canvas renderer. No backend, database, or API keys required.
