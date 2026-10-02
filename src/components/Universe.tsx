@@ -15,6 +15,7 @@ export default function Universe(props: Props) {
   const latest = useRef(props);
   latest.current = props;
   const [hovered, setHovered] = useState<Company | null>(null);
+  const inspecting = props.flight && props.selected !== null;
   const hoverPosition = useRef({ x:0, y:0 });
   const tooltip = useRef<HTMLDivElement>(null);
   const logoNodes = useMemo(() => {
@@ -26,9 +27,9 @@ export default function Universe(props: Props) {
   },[props.nodes,props.batch,props.industry,props.selected,props.flight]);
 
   useEffect(()=>{
-    if(!props.flight&&document.pointerLockElement===canvas.current)document.exitPointerLock();
-    if(!props.flight){setHovered(null);if(canvas.current)canvas.current.style.cursor='grab';}
-  },[props.flight]);
+    if((!props.flight||inspecting)&&document.pointerLockElement===canvas.current)document.exitPointerLock();
+    if(!props.flight||inspecting){setHovered(null);if(canvas.current)canvas.current.style.cursor=inspecting?'default':'grab';}
+  },[props.flight,inspecting]);
 
   useEffect(() => {
     const el = canvas.current!, container = root.current!;
@@ -96,7 +97,7 @@ export default function Universe(props: Props) {
       const tag=(e.target as HTMLElement).tagName;
       if(['INPUT','SELECT','TEXTAREA'].includes(tag)||document.querySelector('dialog[open]'))return;
       const key=e.key.toLowerCase();
-      if(latest.current.flight&&['w','a','s','d','q','e','shift','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
+      if(latest.current.flight&&!latest.current.selected&&['w','a','s','d','q','e','shift','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
         e.preventDefault();target=null;
         if(!e.repeat&&!keys.has(key)){
           const tap=(e.shiftKey?650:260)/60;
@@ -113,7 +114,9 @@ export default function Universe(props: Props) {
     function blur(){keys.clear();dragging=false;mouseReady=false;container.classList.remove('dragging');}
     function pointerLockChange(){
       const wasLocked=locked;locked=document.pointerLockElement===el;mouseReady=false;
-      if(wasLocked&&!locked){keys.clear();latest.current.onPark();}
+      // Opening company options releases the mouse without parking the flight.
+      if(locked&&latest.current.selected){document.exitPointerLock();return;}
+      if(wasLocked&&!locked){keys.clear();if(latest.current.flight&&!latest.current.selected)latest.current.onPark();}
     }
     function aim(){return latest.current.flight?viewCenter(width,height,true):hoverPosition.current;}
     function updateHover(){
@@ -125,7 +128,7 @@ export default function Universe(props: Props) {
       el.style.cursor=latest.current.flight?'none':point?'pointer':'grab';
     }
     function mouseMove(e: MouseEvent){
-      if(!latest.current.flight){mouseReady=false;return;}
+      if(!latest.current.flight||latest.current.selected){mouseReady=false;return;}
       if(locked){lookCamera(camera,e.movementX,e.movementY);hoverPosition.current=aim();}
       else {
         if(mouseReady)lookCamera(camera,e.clientX-mouseX,e.clientY-mouseY);
@@ -134,10 +137,12 @@ export default function Universe(props: Props) {
       target=null;
     }
     function pointerDown(e: PointerEvent){if(e.button!==0)return;
+      if(latest.current.flight&&latest.current.selected)return;
       if(latest.current.flight&&e.pointerType!=='touch')return;
       dragging=true;dragDistance=0;px=e.clientX;py=e.clientY;el.setPointerCapture(e.pointerId);container.classList.add('dragging');
     }
     function pointerMove(e: PointerEvent){
+      if(latest.current.flight&&latest.current.selected)return;
       if(!latest.current.flight){const bounds=el.getBoundingClientRect();hoverPosition.current={x:e.clientX-bounds.left,y:e.clientY-bounds.top};}
       if(dragging){const dx=e.clientX-px,dy=e.clientY-py;dragDistance+=Math.abs(dx)+Math.abs(dy);target=null;
         if(latest.current.flight){lookCamera(camera,dx,dy);}
@@ -147,12 +152,12 @@ export default function Universe(props: Props) {
       updateHover();
     }
     function pointerUp(e: PointerEvent){
-      if(e.button!==0)return;
+      if(e.button!==0||latest.current.flight&&latest.current.selected)return;
       const click=latest.current.flight&&!dragging||dragging&&dragDistance<5;
       dragging=false;container.classList.remove('dragging');if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);
-      if(click){const position=aim();const p=pointCache.find(p=>Math.hypot(p.x-position.x,p.y-position.y)<Math.max(p.size+3,8));if(p)latest.current.onSelect(p.node.company);}
+      if(click){const position=aim();const p=pointCache.find(p=>Math.hypot(p.x-position.x,p.y-position.y)<Math.max(p.size+3,8));if(p){keys.clear();target=null;mouseReady=false;latest.current.onSelect(p.node.company);}}
     }
-    function wheel(e: WheelEvent){e.preventDefault();target=null;
+    function wheel(e: WheelEvent){e.preventDefault();if(latest.current.flight&&latest.current.selected)return;target=null;
       if(latest.current.flight)moveCamera(camera,1,0,0,-e.deltaY*.65);
       else camera.z=clamp(camera.z+e.deltaY*.8,-6000,7000);
     }
@@ -166,14 +171,14 @@ export default function Universe(props: Props) {
       const dt=Math.min((time-previous)/1000||.016,.05);previous=time;
       const p=latest.current;
       if(target){const ease=reducedMotion?1:1-Math.exp(-dt*6);for(const key of ['x','y','z','yaw','pitch'] as const)camera[key]+=(target[key]-camera[key])*ease;if(Math.abs(target.z-camera.z)<.1)target=null;}
-      if(p.flight){
+      if(p.flight&&!p.selected){
         const acceleration=keys.has('shift')?650:260;
         const forward=Number(keys.has('w'))-Number(keys.has('s')),right=Number(keys.has('d'))-Number(keys.has('a')),up=Number(keys.has('q'))-Number(keys.has('e'));
         speed=acceleration*Math.hypot(forward,right,up);
         moveCamera(camera,forward,right,up,acceleration*dt);
         camera.yaw+=(Number(keys.has('arrowleft'))-Number(keys.has('arrowright')))*dt*.6;
         camera.pitch=clamp(camera.pitch+(Number(keys.has('arrowdown'))-Number(keys.has('arrowup')))*dt*.6,-1.1,1.1);
-      }else {keys.clear();speed=0;logos.pause();}
+      }else {keys.clear();speed=0;if(!p.flight)logos.pause();}
       if(time-lastTelemetry>250){lastTelemetry=time;p.onTelemetry(Math.round(speed));}
       ctx.clearRect(0,0,width,height);ctx.fillStyle='#080b10';ctx.fillRect(0,0,width,height);
       stars.forEach(s=>{const twinkle=reducedMotion?1:.82+Math.sin(time*.0004+s.phase)*.18;ctx.globalAlpha=s.a*twinkle;ctx.fillStyle='#a9bdce';ctx.beginPath();ctx.arc((s.x*width-camera.yaw*80+width)%width,(s.y*height+camera.pitch*50+height)%height,s.r,0,Math.PI*2);ctx.fill();if(s.r>1.08){ctx.globalAlpha=.25;ctx.drawImage(glowSprite('#a9bdce'),s.x*width-6,s.y*height-6,12,12);}});ctx.globalAlpha=1;
@@ -248,7 +253,7 @@ export default function Universe(props: Props) {
         pointCache.push({node,x:pt.x,y:pt.y,size,depth:pt.depth});
       });
       pointCache.sort((a,b)=>p.flight?a.depth-b.depth:b.size-a.size);
-      if(p.flight)updateHover();
+      if(p.flight&&!p.selected)updateHover();
       const occupied:{x:number;y:number;width:number;height:number}[]=[];
       Array.from(labels.current.entries()).sort(([a],[b])=>Number(b===p.selected?.id)-Number(a===p.selected?.id)).forEach(([id,button])=>{
         const node=nodeById.get(id)!,pt=projected.get(id)!;
@@ -280,14 +285,14 @@ export default function Universe(props: Props) {
     };
   },[props.batches,props.nodes,props.api]);
 
-  return <div ref={root} className={`universe ${props.flight?'flying':''}`} aria-label="Interactive three-dimensional YC company universe" data-mode={props.flight?'flight':'overview'}>
-    <canvas ref={canvas} tabIndex={0} aria-label={props.flight?'All-company flight map. Move the mouse to look, W S A D to fly, click a logo for details, Escape to park.':'Company star map. Drag to explore, scroll to zoom. Use the search or batch selector to navigate.'}/>
+  return <div ref={root} className={`universe ${props.flight?'flying':''} ${inspecting?'inspecting':''}`} aria-label="Interactive three-dimensional YC company universe" data-mode={props.flight?'flight':'overview'}>
+    <canvas ref={canvas} tabIndex={0} aria-label={inspecting?'Flight paused for company details. Close details to resume, Escape to park.':props.flight?'All-company flight map. Move the mouse to look, W S A D to fly, click a logo for details, Escape to park.':'Company star map. Drag to explore, scroll to zoom. Use the search or batch selector to navigate.'}/>
     <div className="company-label-layer">
       {logoNodes.map(node=><button key={node.company.id} ref={el=>{if(el)labels.current.set(node.company.id,el);else labels.current.delete(node.company.id);}} className={`company-node ${node.company.id===props.selected?.id?'selected':''} ${props.labels?'':'hide-label'}`} style={{'--batch-color':node.batch.color} as React.CSSProperties} onClick={()=>props.onSelect(node.company)} aria-label={`Explore ${node.company.name}`} onMouseEnter={e=>{const bounds=canvas.current!.getBoundingClientRect();hoverPosition.current={x:e.clientX-bounds.left,y:e.clientY-bounds.top};setHovered(node.company);}} onMouseLeave={()=>setHovered(null)}>
         <span className="node-logo"><CompanyLogo company={node.company}/></span><span className="node-name">{node.company.name}</span>
       </button>)}
     </div>
-    {hovered&&hovered.id!==props.selected?.id&&<div className="company-tooltip panel" ref={tooltip}><strong>{hovered.name}</strong><span>{hovered.description}</span><small>{hovered.batch} · {hovered.industry}</small></div>}
-    {props.flight&&<div className="flight-crosshair" aria-hidden="true"><span/><span/></div>}
+    {!inspecting&&hovered&&hovered.id!==props.selected?.id&&<div className="company-tooltip panel" ref={tooltip}><strong>{hovered.name}</strong><span>{hovered.description}</span><small>{hovered.batch} · {hovered.industry}</small></div>}
+    {props.flight&&!inspecting&&<div className="flight-crosshair" aria-hidden="true"><span/><span/></div>}
   </div>;
 }

@@ -16,3 +16,5 @@
 .flight-crosshair{left:50%;top:50%}
 .atlas-app.flight-active,.atlas-app.flight-active *{cursor:none!important}
 .atlas-app.flight-active :is(.topbar,.explorer-wrap,.mobile-explorer,.minimap,.navigation-toolbar,.view-controls,.statusbar){pointer-events:none}
+.inspector-flight{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.inspector-flight p{margin-bottom:12px;font-size:11px;color:var(--muted)}

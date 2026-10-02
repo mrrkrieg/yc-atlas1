@@ -22,7 +22,7 @@ Open [127.0.0.1:5173](http://127.0.0.1:5173/).
 - Search for a company or select a batch to travel to it.
 - Drag and scroll to explore the overview.
 - **Enter flight** to see every batch and company. **W/S** flies forward/back, **A/D** strafes, **Q/E** rises/descends, and **Shift** boosts speed.
-- Move the mouse to look. The fixed center crosshair is your flight cursor; click to open the company beneath it.
+- Move the mouse to look. The fixed center crosshair is your flight cursor; click to open the company beneath it. Flight pauses while its website and YC profile options are open, with all logos and your position preserved. Close the details or choose **Resume flight** to continue.
 - Press **Esc** to exit flight and restore the normal mouse.
 - Open company details to visit its website or YC profile. Missing logos use initials.
 

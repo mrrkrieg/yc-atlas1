@@ -2,7 +2,7 @@ import type { Company } from '../types';
 import { batchCode, safeWebsite } from '../lib/universe';
 import CompanyLogo from './CompanyLogo';
 import Icon from './Icon';
-export default function Inspector({ company, onClose, onBatch }: { company: Company; onClose: () => void; onBatch: (batch: string) => void }) {
+export default function Inspector({ company, onClose, onBatch, onResume }: { company: Company; onClose: () => void; onBatch: (batch: string) => void; onResume?: () => void }) {
   const website = safeWebsite(company.website);
   return <aside className="inspector panel" aria-label={`${company.name} company details`}>
     <button className="close-button" onClick={onClose} aria-label="Close company details"><Icon name="close" size={17}/></button>
@@ -12,5 +12,6 @@ export default function Inspector({ company, onClose, onBatch }: { company: Comp
     <dl className="company-meta"><div><dt>BATCH</dt><dd><button onClick={() => onBatch(company.batch)}>{company.batch}</button></dd></div><div><dt>LOCATION</dt><dd>{company.location || 'Not listed'}</dd></div><div><dt>INDUSTRY</dt><dd>{company.industry}</dd></div></dl>
     {website ? <a className="website-button" href={website} target="_blank" rel="noopener noreferrer">Visit website<Icon name="arrow" size={18}/></a> : <div className="no-website">Website not listed</div>}
     <a className="yc-company-link" href={`https://www.ycombinator.com/companies/${encodeURIComponent(company.slug)}`} target="_blank" rel="noopener noreferrer">View on Y Combinator<Icon name="arrow" size={15}/></a>
+    {onResume&&<div className="inspector-flight"><p>Flight paused. Your position is saved.</p><button className="surprise-button" onClick={onResume}><Icon name="flight"/>Resume flight</button></div>}
   </aside>;
 }
