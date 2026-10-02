@@ -1,0 +1,24 @@
+# Original browser and design verification
+
+This records the initial design milestone. The current app includes all company logos during flight, centered crosshair selection, and Escape to exit. Eight automated tests and the production build pass. The latest universe screenshot is [docs/universe.jpg](../docs/universe.jpg).
+
+Verified with the Codex in-app browser, using native screenshots. No Playwright fallback was needed. The generated full-screen reference `concept.png`, the final `desktop.jpg`, and the final `mobile.jpg` were inspected together with `view_image`. Desktop checked at the reference's native 1536×1024 and the default 1280×720; mobile checked at 390×844, with no horizontal document overflow (clientWidth and scrollWidth both 390).
+
+| Comparison | Reference and implementation | Resolution |
+| --- | --- | --- |
+| Composition | 76px header, left explorer, right inspector, center constellations, lower mini-map and flight toolbar | Preserved. A shorter viewport uses a horizontal view-control strip to avoid inspector overlap. |
+| Palette | Near-black background, charcoal panels, orange YC controls, teal/violet/blue cohort colors | Preserved; point glows use cached radial sprites for soft light rather than opaque circles. |
+| Typography | Sans-serif chrome, mono metadata, uppercase cohort names, restrained heading hierarchy | DM Sans / IBM Plex Mono implemented with system fallbacks. Batch captions enlarged after comparison. |
+| Logos | Circular company marks on the map, square logo in the inspector | Uses authentic directory images. Real logos replace generated approximations, including Stripe's current directory thumbnail. |
+| Spacing and containers | Hairline borders, 12px panel corners, compact native selects, generous open map | Preserved. Explorer spacing tightened to avoid overlapping the mini-map in short viewports. |
+| Company label clarity | Separated logo/name pairs | Foreground positions spaced; overlapping labels culled in priority order. The selected company stays visible. |
+| Mobile | Same design system at a narrow viewport | Compact search/filter button and company drawer, adjusted map projection, zoom controls when the drawer is closed. |
+| Copy | App name, search, explorer, toggles, CTA, navigation and footer | Above-the-fold app copy matches the design inventory. Record-specific names, descriptions, statuses and cohort labels intentionally use real data. |
+
+Intentional deviations: the generated concept contained incorrect company/cohort associations and companies absent from the YC directory. The implementation corrects them, shows all 6,268 actual records across 51 batches, and uses their authentic logos. Node counts, links and spatial positions are deterministic data-driven geometry instead of a raster illustration. The overview shows eight featured constellations with distant groups subdued; every other cohort is reachable by selector, search and flight. The reference is implemented faithfully in its interface structure, palette, typography, containers and interaction intent, with these data-driven deviations. No unresolved material layout or interaction defects were found in the final review.
+
+Verified interactions: keyboard company search (Airbnb), company selection inside Summer 2020 (Supabase), correct website/YC link destinations and `target=_blank`, batch/industry filtering, zero-match recovery, switches, miniature-map travel, random real-company discovery, mouse drag, zoom, full-screen enter/exit, flight forward/strafe/rise and Escape parking, help dialog, and mobile filters. Clicking the external website link was exercised; the in-app browser did not expose an additional tab in its inventory, so new-tab behavior is validated from the link's target and ordinary browser semantics rather than a captured external page.
+
+Five automated tests pass: complete and deterministic company membership, seasonal cohort chronology, projection, website URL validation, and camera motion aligned with the viewing direction after steering. Production TypeScript/Vite build passes. Final browser error log is empty. The JS bundle is about 81 KB gzip, CSS about 5 KB gzip, and the directory snapshot about 547 KB gzip. Featured logos occupy 820 KB on disk.
+
+Design generation used the built-in Image Gen tool. Final brief: “One complete 1536×1024 desktop screen for YC Atlas, a native interactive three-dimensional YC directory; near-black star canvas, orange accent, legible real company logos in connected batch constellations, a 76px search header, left batch/industry explorer, right company inspector with website link, lower mini-map and flight toolbar, soft colored nodes, hairline borders, polished sans and mono typography; no marketing wrapper, no unrelated sections, no repeated card grids.” The full generation prompt is retained in this chat's tool history.
